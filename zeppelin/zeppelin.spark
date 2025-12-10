@@ -1,0 +1,193 @@
+Configuration {
+    software_name: "Zeppelin"
+    about: "Zeppelin"
+    language: python
+}
+
+module Core {
+
+    entity Historical {
+        create_at: datetime
+        modified_at: datetime
+    }
+    
+    entity Base extends Historical {
+        nome: string
+        descricao: string
+        
+    }
+
+    
+
+}
+
+module Sth {
+    entity Stage extends Core.Base {
+
+    }
+}
+
+module ContinuousStar{
+    entity ContinuousPhase extends Core.Base {
+
+    }
+
+    entity ContinuousActivity extends Core.Base {
+        continuous_phase OneToMany ContinuousPhase
+    }
+}
+
+module CSEFramework{
+    entity Process extends Core.Base{
+
+    }
+}
+
+module Organization {
+
+    entity OrganizationCategory extends Core.Base {
+        
+    }
+
+    entity Size extends Core.Base {
+
+    }
+
+    entity OrganizationType extends Core.Base {
+        category OneToOne OrganizationCategory
+
+    }
+
+    entity Region extends Core.Base {
+
+    }
+
+    entity State extends Core.Base {
+        latitude: decimal
+        longitude: decimal
+        region OneToOne  Region
+    }
+
+    entity Organization extends Core.Base {
+        type OneToOne OrganizationType
+        size OneToOne Size
+        age: integer
+        location OneToOne State
+    }
+
+}
+
+module Employee{
+    entity AcademicDegreeCategory extends Core.Base {
+
+    }
+
+    entity AcademicDegree extends Core.Base {
+        academic_degree_category OneToOne AcademicDegreeCategory
+    }
+
+    entity AcademicDegreeStatus extends Core.Base {
+
+    }
+
+    entity KnwoledgeLevel extends Core.Base {
+        value: decimal
+    }
+
+    entity ExperienceLevel extends Core.Base {
+        value: decimal
+    }
+
+    entity Position extends Core.Base {
+
+    }
+
+    entity Employee extends Core.Base {
+        
+        e_mail: email
+        role: string
+        position OneToOne Position
+        organization OneToOne Organization.Organization
+
+    }
+
+    entity EmployeeKnowledge extends Core.Historical {
+        academic_degree OneToOne AcademicDegree
+        academic_degree_status OneToOne AcademicDegreeStatus
+        employee OneToOne Employee
+    }
+
+    entity SthStageKnwoledgeLevel extends Core.Historical {
+        stage OneToOne Sth.Stage
+        Knwoledge_level OneToOne KnwoledgeLevel
+        employee OneToOne Employee
+
+    }
+
+    entity SthStageExperienceLevel extends Core.Historical {
+        stage OneToOne Sth.Stage
+        experience_level OneToOne ExperienceLevel
+        employee OneToOne Employee
+    }
+
+    entity Team extends Core.Base {
+        organization OneToOne Organization.Organization
+        responsible OneToOne Employee
+    }
+
+}
+
+
+
+
+module PractitionersEye{
+    entity Dimension extends Core.Base {
+
+    }
+
+    entity Element extends Core.Base {
+        dimension  OneToOne Dimension
+    }
+}
+
+module Questionnaire {
+    entity AdoptedLevel extends Core.Base {
+        percentage: decimal
+    }
+
+    entity Statement extends Core.Base {
+        code: string
+        statement: string
+        sth_stage OneToOne Sth.Stage
+        pe_element OneToOne PractitionersEye.Element
+        fcse_processes ManyToMany CSEFramework.Process
+        continuous_activity OneToOne ContinuousStar.ContinuousActivity
+
+    }
+
+    entity FeedbackQuestionnaire extends Core.Historical {
+        collected_date: date
+    }
+
+    entity Questionnaire extends Core.Historical {
+        applied_date : date
+        document: file
+        employee OneToOne Employee.Employee
+    }
+
+    entity QuestionnaireExcel extends Questionnaire {
+        feedback OneToOne FeedbackQuestionnaire
+    }
+
+    entity Answer extends Core.Historical {
+        comment: string
+        questionnaire OneToOne Questionnaire
+        adopted_level OneToOne AdoptedLevel
+        statement OneToOne Statement
+        organization OneToOne Organization.Organization
+    }
+
+}
+
+
+
