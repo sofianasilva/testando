@@ -10,9 +10,10 @@ ENV DEBUG=true
 WORKDIR /app
 
 # Copia tudo do projeto (raiz, onde está o docker-compose.yml)
-COPY ./src/ .
+COPY ./src/ ./src/
 COPY .env .
 COPY supervisord.conf .
+
 # Instala dependências do sistema
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -25,18 +26,29 @@ RUN apt-get update && apt-get install -y \
     supervisor \
     && rm -rf /var/lib/apt/lists/*
 
+# Muda para o diretório src onde o Django deve rodar
+WORKDIR /app/src
+
 # Instala dependências Python
 RUN pip install -r requirements.txt
 
-# Cria o diretório de logs antes de executar collectstatic
-RUN mkdir -p /app/logs
+# Cria o diretório de logs no local correto (relativo ao working dir atual)
+RUN mkdir -p logs
 
 RUN python manage.py collectstatic --noinput --no-post-process
 
+# Volta para /app para copiar arquivos de configuração
+WORKDIR /app
+
 COPY supervisord.conf /etc/supervisord.conf
 
+# Fix line endings and copy entrypoint
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
+
+# Define working directory final
+WORKDIR /app/src
+
 ENTRYPOINT ["/entrypoint.sh"]
 
 CMD ["supervisord", "-c", "/etc/supervisord.conf"]

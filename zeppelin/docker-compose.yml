@@ -9,8 +9,7 @@ services:
       - "5555:5555"
     volumes:
       - .:/app
-      - ./logs:/app/logs
-    working_dir: /app/src
+      - ./logs:/app/src/logs
     depends_on:
       - db_zeppelin
       - redis
