@@ -4,8 +4,7 @@ import { env } from '@/stores/env'
 export const api = axios.create({
   baseURL: env.API_BASE_URL,
   headers: { 
-    "Content-Type": "application/json",
-    ...(env.ZEPPELIN_API_TOKEN && { "Authorization": `Token ${env.ZEPPELIN_API_TOKEN}` })
+    "Content-Type": "application/json"
   },
   withCredentials: true,
 });

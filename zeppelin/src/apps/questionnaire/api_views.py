@@ -19,7 +19,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAdminUser
 from rest_condition import And, Or
 from oauth2_provider.contrib.rest_framework import TokenHasReadWriteScope, OAuth2Authentication
-from rest_framework.authentication import SessionAuthentication, TokenAuthentication
+from rest_framework.authentication import SessionAuthentication
 from .pagination import CustomPagination
 from rest_framework import generics
 from rest_framework import filters
@@ -154,8 +154,8 @@ class AnswerViewSet(ModelViewSet):
 
 
 @api_view(['POST'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
+@authentication_classes([OAuth2Authentication, SessionAuthentication])
+@permission_classes([Or(IsAdminUser, TokenHasReadWriteScope)])
 def submit_questionnaire(request):
     """
     Submit questionnaire answers.

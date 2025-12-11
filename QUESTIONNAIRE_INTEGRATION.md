@@ -10,23 +10,18 @@ The integration allows users to submit questionnaire answers from the Vue.js fro
 
 ### 1. New API Endpoint
 - **URL**: `POST /questionnaire/submit/`
-- **Authentication**: Token Authentication
+- **Authentication**: OAuth2 Authentication (same as existing endpoints)
 - **Purpose**: Receives questionnaire answers and stores them in the database
 
 ### 2. Files Modified/Created
 - `zeppelin/src/apps/questionnaire/api_views.py` - Added `submit_questionnaire` function
 - `zeppelin/src/apps/questionnaire/api_urls.py` - Added new endpoint route
-- `zeppelin/setup_api_token.py` - Helper script for token generation
 
 ## Frontend Changes
 
-### 1. Environment Configuration
-- Added `VITE_ZEPPELIN_API_TOKEN` to environment variables
-- Updated `zeppelin-frontend/src/stores/env.ts` to include token
-
-### 2. API Service Enhancement
-- Updated `zeppelin-frontend/src/services/api.ts` to include token authentication
-- Added `submitQuestionnaire` function for API calls
+### 1. API Service Enhancement
+- Updated `zeppelin-frontend/src/services/api.ts` with `submitQuestionnaire` function
+- Uses existing OAuth2 authentication system
 
 ### 3. Questionnaire Composable
 - Enhanced `zeppelin-frontend/src/composables/useQuestionnaire.ts` with submission functionality
@@ -41,37 +36,7 @@ All questionnaire forms now include:
 
 ## Setup Instructions
 
-### 1. Backend Setup
-
-1. **Create Superuser and API Token**:
-   ```bash
-   cd zeppelin
-   python setup_api_token.py
-   ```
-   
-   This script will:
-   - Create a Django superuser (if none exists)
-   - Generate an API token
-   - Display setup instructions
-
-2. **Alternative Manual Setup**:
-   ```bash
-   cd zeppelin/src
-   python manage.py createsuperuser
-   python manage.py shell
-   ```
-   
-   In the Django shell:
-   ```python
-   from django.contrib.auth.models import User
-   from rest_framework.authtoken.models import Token
-   
-   user = User.objects.get(username='your_username')
-   token = Token.objects.create(user=user)
-   print(f"Token: {token.key}")
-   ```
-
-### 2. Frontend Setup
+### 1. Frontend Setup
 
 1. **Create Environment File**:
    ```bash
@@ -83,12 +48,13 @@ All questionnaire forms now include:
    Edit `.env` file:
    ```env
    VITE_API_BASE_URL=http://localhost:8000
-   VITE_CLIENT_ID=your_client_id
-   VITE_CLIENT_SECRET=your_client_secret
-   VITE_ZEPPELIN_API_TOKEN=your_generated_token_here
+   VITE_CLIENT_ID=your_existing_oauth2_client_id
+   VITE_CLIENT_SECRET=your_existing_oauth2_client_secret
    ```
 
-### 3. Running the Application
+   **Note**: Use the same OAuth2 credentials that were already configured for your project.
+
+### 2. Running the Application
 
 1. **Start Backend**:
    ```bash
@@ -108,7 +74,7 @@ All questionnaire forms now include:
 ### Request Format
 ```json
 POST /questionnaire/submit/
-Authorization: Token your_token_here
+Authorization: Bearer your_oauth2_access_token
 Content-Type: application/json
 
 {
@@ -176,9 +142,9 @@ The integration uses existing Django models:
 
 ### Common Issues
 
-1. **Token Authentication Failed**
-   - Verify token is correctly set in `.env`
-   - Check token exists in Django admin: `/admin/authtoken/token/`
+1. **OAuth2 Authentication Failed**
+   - Verify CLIENT_ID and CLIENT_SECRET are correctly set in `.env`
+   - Check OAuth2 application exists in Django admin: `/admin/oauth2_provider/application/`
 
 2. **CORS Issues**
    - Ensure frontend URL is in `CORS_ALLOWED_ORIGINS` in Django settings
@@ -197,7 +163,7 @@ The integration uses existing Django models:
 1. **Test API Directly**:
    ```bash
    curl -X POST http://localhost:8000/questionnaire/submit/ \
-     -H "Authorization: Token your_token_here" \
+     -H "Authorization: Bearer your_oauth2_access_token" \
      -H "Content-Type: application/json" \
      -d '{"questionnaire_type":"test","answers":{"T.01":{"adoption":"fully_adopted","comment":"test"}}}'
    ```
@@ -208,9 +174,9 @@ The integration uses existing Django models:
 
 ## Security Notes
 
-- API tokens should be kept secure and not committed to version control
-- The current implementation uses Django's built-in Token authentication
-- Consider implementing token rotation for production use
+- OAuth2 credentials should be kept secure and not committed to version control
+- The implementation uses the existing OAuth2 authentication system
+- OAuth2 access tokens have built-in expiration for security
 - Validate all input data on the backend
 
 ## Future Enhancements
