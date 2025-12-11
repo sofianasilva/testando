@@ -42,7 +42,7 @@ class Statement(Base):
         db_table = 'statement'
     
     def __str__(self):
-        return self.code + "-"+ self.statement
+        return f"{self.code} - {self.text[:50]}..." if self.text else self.code or "Statement"
 
 class FeedbackQuestionnaire(Base):
     collected_date = models.DateTimeField(auto_now_add=True)
@@ -58,7 +58,7 @@ class Questionnaire(Base):
     """
     
     applied_date = models.DateTimeField(null=True, blank=True)
-    document = models.FileField(upload_to='documents/%Y/%m/%d/')
+    document = models.FileField(upload_to='documents/%Y/%m/%d/', null=True, blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     employee_questionnaire = models.ForeignKey(Employee, on_delete=models.CASCADE, null=True, blank=True,related_name="questionnaire_questionnaire_%(class)s")
    
@@ -66,7 +66,9 @@ class Questionnaire(Base):
         db_table = 'questionnaire'
     
     def __str__(self):
-       return self.document.name
+        if self.document:
+            return self.document.name
+        return f"Questionário #{self.id} - {self.applied_date.strftime('%d/%m/%Y %H:%M') if self.applied_date else 'Sem data'}"
 
 
 class QuestionnaireExcel(Questionnaire):
@@ -95,4 +97,4 @@ class Answer(Base):
         db_table = 'answer'
     
     def __str__(self):
-        return self.statement.code 
+        return f"{self.statement_answer.code} - {self.adopted_level_answer.name}" 
