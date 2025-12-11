@@ -87,7 +87,7 @@ class Answer(Base):
     adopted_level_answer = models.ForeignKey(AdoptedLevel, on_delete=models.CASCADE)
     statement_answer = models.ForeignKey(Statement, on_delete=models.CASCADE)
     comment_answer = models.TextField()
-    organization_answer = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    organization_answer = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
     
    
 

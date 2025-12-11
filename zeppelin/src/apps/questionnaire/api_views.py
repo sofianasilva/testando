@@ -154,8 +154,8 @@ class AnswerViewSet(ModelViewSet):
 
 
 @api_view(['POST'])
-@authentication_classes([OAuth2Authentication, SessionAuthentication])
-@permission_classes([Or(IsAdminUser, TokenHasReadWriteScope)])
+@authentication_classes([TokenAuthentication, OAuth2Authentication, SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def submit_questionnaire(request):
     """
     Submit questionnaire answers.
@@ -165,19 +165,33 @@ def submit_questionnaire(request):
         "answers": {
             "IS.01": {"adoption": "fully_adopted", "comment": "We have this implemented"},
             "IS.02": {"adoption": "partially_adopted", "comment": "Work in progress"}
-        }
+        },
+        "organization_id": 1  // Optional - if provided, associates answers with organization
     }
     """
     try:
         data = request.data
         questionnaire_type = data.get('questionnaire_type')
         answers_data = data.get('answers', {})
+        organization_id = data.get('organization_id')  # Optional organization
         
         if not questionnaire_type or not answers_data:
             return Response(
                 {'error': 'questionnaire_type and answers are required'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+        # Validate organization if provided
+        organization = None
+        if organization_id:
+            try:
+                from apps.organization.models import Organization
+                organization = Organization.objects.get(id=organization_id)
+            except Organization.DoesNotExist:
+                return Response(
+                    {'error': f'Organization with id {organization_id} does not exist'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         
         # Create a new questionnaire record
         questionnaire = Questionnaire.objects.create(
@@ -191,27 +205,47 @@ def submit_questionnaire(request):
             adoption_level = answer_data.get('adoption', '')
             comment = answer_data.get('comment', '')
             
-            # Find or create the statement
+            # Find or create the statement with descriptive text
+            questionnaire_descriptions = {
+                'innovation_system': 'Declaração sobre Sistema de Inovação',
+                'continuous_integration': 'Declaração sobre Integração Contínua', 
+                'continuous_deployment': 'Declaração sobre Deploy Contínuo',
+                'agile_organization': 'Declaração sobre Organização Ágil'
+            }
+            
+            description_prefix = questionnaire_descriptions.get(
+                questionnaire_type, 
+                'Declaração de Questionário'
+            )
+            
             statement, created = Statement.objects.get_or_create(
                 code=question_code,
-                defaults={'text': f'Statement for {question_code}'}
+                defaults={'text': f'{description_prefix} - {question_code}'}
             )
             
             # Find or create adoption level based on the adoption string
             adoption_mapping = {
-                'not_adopted': {'name': 'Not Adopted', 'percentage': 0},
-                'partially_adopted': {'name': 'Partially Adopted', 'percentage': 50},
-                'fully_adopted': {'name': 'Fully Adopted', 'percentage': 100},
+                'not_adopted': {'name': 'Não Adotado', 'description': 'Prática não adotada pela organização', 'percentage': 0},
+                'partially_adopted': {'name': 'Parcialmente Adotado', 'description': 'Prática parcialmente adotada pela organização', 'percentage': 50},
+                'fully_adopted': {'name': 'Totalmente Adotado', 'description': 'Prática totalmente adotada pela organização', 'percentage': 100},
             }
             
             adoption_info = adoption_mapping.get(adoption_level, adoption_mapping['not_adopted'])
-            adopted_level, created = AdoptedLevel.objects.get_or_create(
-                name=adoption_info['name'],
-                defaults={
-                    'description': adoption_info['name'],
-                    'percentage': adoption_info['percentage']
-                }
-            )
+            
+            # Try to get existing adoption level first
+            try:
+                adopted_level = AdoptedLevel.objects.get(name=adoption_info['name'])
+                # Update fields if they are null or empty
+                if not adopted_level.description:
+                    adopted_level.description = adoption_info['description']
+                    adopted_level.save()
+            except AdoptedLevel.DoesNotExist:
+                # Create new adoption level with all required fields
+                adopted_level = AdoptedLevel.objects.create(
+                    name=adoption_info['name'],
+                    description=adoption_info['description'],
+                    percentage=adoption_info['percentage']
+                )
             
             # Create the answer
             answer = Answer.objects.create(
@@ -219,7 +253,7 @@ def submit_questionnaire(request):
                 adopted_level_answer=adopted_level,
                 statement_answer=statement,
                 comment_answer=comment,
-                organization_answer_id=1  # Default organization, can be made dynamic
+                organization_answer=organization  # Optional field, None if not provided
             )
             saved_answers.append({
                 'question_code': question_code,

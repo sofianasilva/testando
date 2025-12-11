@@ -74,7 +74,7 @@ All questionnaire forms now include:
 ### Request Format
 ```json
 POST /questionnaire/submit/
-Authorization: Bearer your_oauth2_access_token
+Authorization: Token your_token_here
 Content-Type: application/json
 
 {
@@ -88,7 +88,8 @@ Content-Type: application/json
       "adoption": "partially_adopted", 
       "comment": "Work in progress"
     }
-  }
+  },
+  "organization_id": 1  // Optional - associates answers with organization
 }
 ```
 
